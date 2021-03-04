@@ -97,5 +97,87 @@ df <- mtcars
 
 df$cyl <- as.factor(df$cyl)
 
-head(df[, c("wt", "mpg", "cyl")], 3)
+ggplot(df, aes(x = wt, y = mpg)) +
+  geom_point(aes(color = cyl)) + 
+  scale_color_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) +
+  scale_size(range = c(0.5, 12))
 
+# Heat Map
+
+nba <- read.csv("http://datasets.flowingdata.com/ppg2008.csv")
+
+head(nba)
+
+nba$Name <- with(nba, reorder(Name, PTS))
+
+head(nba)
+
+library(reshape2)
+library(plyr)
+library(scales)
+
+nba.m <- melt(nba)
+
+nba.m <- ddply(nba.m, .(variable), transform, rescale = rescale(value))
+
+ggplot(nba.m, aes(variable, Name)) +
+  geom_tile(aes(fill = rescale), colour = "white") +
+  scale_fill_distiller(palette = "YlOrRd") +
+  guides(fill = guide_legend(title = "Rating"))
+
+# Lollipop Chart
+
+library(dplyr)
+
+ohio <- midwest %>%
+  filter(state == "OH") %>%
+  select(county, percollege) %>%
+  arrange(percollege) %>%
+  mutate(Avg = mean(percollege, na.rm = T),
+         Above = ifelse(percollege - Avg > 0, T, F),
+         county = factor(county, levels = .$county))
+
+ggplot(ohio, aes(percollege, county, color = Above)) +
+  geom_segment(aes(x = Avg, y = county, xend = percollege, yend = county),
+               color = "grey50") +
+  geom_point() +
+  theme(text = element_text(size = 7))
+
+# Multi-Bar Chart
+
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+
+ggplot(data = ToothGrowth, aes(fill = supp, x = dose, y = len)) +
+  geom_bar(position = "dodge", stat = "identity")
+
+# Facet Grid Chart
+
+sp <- ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point(shape = 2)
+
+sp
+
+sp + facet_grid(vs ~ cyl)
+sp + facet_wrap( ~ cyl)
+
+# Scatterplot Matrix
+
+library(GGally)
+
+mtcars$am <- as.factor(mtcars$am)
+
+ggpairs(mtcars, columns = 1:4, title = "MT Cars", mapping = ggplot2::aes(colour = am), axisLabels = "show")
+
+# Chloropeth Map
+
+library(stringr)
+library(maps)
+
+states <- as.data.frame(state.x77)
+states$region <- tolower(rownames(states))
+
+states_map <- map_data("state")
+fact_join <- left_join(states_map, states, by = "region")
+
+ggplot(fact_join, aes(long, lat, group = group)) +
+  geom_polygon(aes(fill = Murder), color = "white") +
+  scale_fill_viridis_c(option = "C")
